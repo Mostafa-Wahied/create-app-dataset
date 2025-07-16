@@ -36,10 +36,10 @@ curl -Lo create_app_dataset.sh \
 chmod +x create_app_dataset.sh
 
 # test with dry‑run
-sudo ./create_app_dataset.sh --dry-run immich config data upload
+sudo ./create_app_dataset.sh --dry-run portracker config data upload
 
 # actual run
-sudo ./create_app_dataset.sh immich config data upload
+sudo ./create_app_dataset.sh portracker config data upload
 ```
 
 (You can place the script anywhere, e.g. `/mnt/tank/scripts/`.)
