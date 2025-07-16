@@ -30,7 +30,7 @@
 ```bash
 # download
 curl -Lo create_app_dataset.sh \
-  https://raw.githubusercontent.com/mostafawahied/create-app-dataset/main/create_app_dataset.sh
+  https://raw.githubusercontent.com/Mostafa-Wahied/create-app-dataset/refs/heads/main/create_app_dataset.sh
 
 # make executable
 chmod +x create_app_dataset.sh
