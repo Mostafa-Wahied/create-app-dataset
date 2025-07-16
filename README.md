@@ -64,17 +64,23 @@ sudo ./create_app_dataset.sh portracker config data upload
 # dry‑run first
 # create app with no sub-datasets
 sudo ./create_app_dataset.sh --dry-run portracker
+
 # actual run
 sudo ./create_app_dataset.sh portracker
+
 # create app + sub-datasets
 sudo ./create_app_dataset.sh portracker config data
+
 # different pool & root, also saved for next time in .create_app_dataset.conf
 sudo ./create_app_dataset.sh -p tank -r appdata portracker
+
 # fix permissions on an existing app tree
 sudo ./create_app_dataset.sh --force-acl portracker config data
+
 # add child datasets to an existing app dataset, if you already have portracker created
 # (e.g. portracker/config, portracker/data)
 sudo ./create_app_dataset.sh portracker config data
+
 # or if you already have portracker/config, this will add data as another sub-dataset.
 sudo ./create_app_dataset.sh portracker config data
 ```
