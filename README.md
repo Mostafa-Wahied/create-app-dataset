@@ -4,6 +4,8 @@
 
 ---
 
+![Screenshot of create_app_dataset.sh in action](create_app_dataset_screenshot.gif)
+
 ## Features
 
 - Uses the **middleware CLI `midclt`** – matches how SCALE itself manages storage.

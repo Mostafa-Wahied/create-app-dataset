@@ -151,11 +151,10 @@ check_pool_exists() {
   log_success "ZFS Pool '${pool_name}' found."
 }
 
-# Function to check if a dataset exists using TrueNAS middleware.
+# Function to check if a dataset exists using zfs list.
 dataset_exists() {
   local ds="$1"
-  local query_json_payload="[[\"id\", \"=\", \"${ds}\"]]"
-  midclt call pool.dataset.query "${query_json_payload}" | jq -e '.[0]' &>/dev/null
+  zfs list -H -o name "${ds}" >/dev/null 2>&1
 }
 
 # Function to confirm the parent root dataset exists or prompt for creation.
