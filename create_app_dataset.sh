@@ -96,6 +96,7 @@ CONFIG_FILE="${SCRIPT_DIR}/.create_app_dataset.conf"
 DRY_RUN=false
 FORCE_ACL=false # Flag to control ACL re-application on existing datasets
 CREATED_DATASETS=() # Keep track of datasets created in this run for potential cleanup
+DRY_RUN_WOULD_CREATE_DATASETS=() # Tracks datasets that *would* be created in a dry run
 
 # ---------- Helper Functions ----------
 
@@ -212,6 +213,7 @@ create_dataset() {
       log_dryrun "Would create dataset ${dataset_full_path}."
       log_dryrun "Create JSON payload:"
       echo "${create_json_payload}" | jq .
+      DRY_RUN_WOULD_CREATE_DATASETS+=("${dataset_full_path}")
     fi
   fi
 }
@@ -221,7 +223,8 @@ create_dataset() {
 apply_acl() {
   local dataset_full_path="$1"
   local mount_path="/mnt/${dataset_full_path}"
-  local just_created=false
+  local just_created_in_this_run=false
+  local would_be_created_in_dry_run=false
 
   # Define acl_json here so it's available for both dry run and actual run
   local acl_json
@@ -265,15 +268,22 @@ apply_acl() {
 EOF
 ) # The closing parenthesis for command substitution must be directly after EOF
 
-  # Check if this dataset was just created in the current run
+  # Check if this dataset was just created in the current (actual) run
   if [[ " ${CREATED_DATASETS[*]} " =~ " ${dataset_full_path} " ]]; then
-    just_created=true
+    just_created_in_this_run=true
+  fi
+
+  # Check if this dataset *would be* created in a dry run (if we are in dry run mode)
+  if "${DRY_RUN}"; then
+    if [[ " ${DRY_RUN_WOULD_CREATE_DATASETS[*]} " =~ " ${dataset_full_path} " ]]; then
+      would_be_created_in_dry_run=true
+    fi
   fi
 
   # --- Dry Run Logic ---
   if "${DRY_RUN}"; then
-    if "${just_created}"; then
-      log_dryrun "Would apply ACL and chown ${APPS_USER}:${APPS_GROUP} to ${mount_path} (newly created dataset)."
+    if "${would_be_created_in_dry_run}"; then
+      log_dryrun "Would apply ACL and chown ${APPS_USER}:${APPS_GROUP} to ${mount_path} (dataset would be newly created in this dry run)."
       log_dryrun "ACL JSON payload (note: this is a dry run; ACL would be applied):"
       printf '%s\n' "${acl_json}"
     elif "${FORCE_ACL}"; then
@@ -281,13 +291,13 @@ EOF
       log_dryrun "ACL JSON payload (note: this is a dry run; ACL would be applied):"
       printf '%s\n' "${acl_json}"
     else
-      log_dryrun "Dataset ${dataset_full_path} already exists and --force-acl was not specified. Would skip ACL application."
+      log_dryrun "Dataset ${dataset_full_path} already exists (on the real system) and --force-acl was not specified. Would skip ACL application."
     fi
     return # Exit dry run path
   fi
 
   # --- Actual Run Logic ---
-  if "${just_created}"; then
+  if "${just_created_in_this_run}"; then
     log_info "Applying ACL and Unix ownership to ${mount_path} (newly created dataset)..."
     # Proceed with midclt call and chown
   elif "${FORCE_ACL}"; then
@@ -298,7 +308,7 @@ EOF
     return # Skip ACL application
   fi
 
-  # This part only executes if just_created or FORCE_ACL is true
+  # This part only executes if just_created_in_this_run or FORCE_ACL is true
   # Adding a small wait loop for the mount path to appear after dataset creation.
   # This addresses a potential (rare) race condition.
   for _ in {1..30}; do
@@ -382,7 +392,7 @@ while (($#)); do
     -h|--help)
       sed -n '/^# USAGE/,/^# CONFIG FILE/p' "$0" | sed '1d;$d;s/^# //'
       exit 0 ;;
-    --) shift; break ;;           # explicit end-of-options marker
+    --) shift; break ;;            # explicit end-of-options marker
     -*) log_error "Unknown option: $1"; exit 1 ;; # Catch any other unknown flags
     *)  positional_args_collected+=("$1"); shift ;; # Collect positional arguments
   esac
@@ -466,6 +476,7 @@ if ! dataset_exists "${local_full_root_path}"; then
         log_dryrun "Would create intermediate root dataset ${local_full_root_path}."
         log_dryrun "Root Create JSON payload:"
         echo "${create_root_json_payload}" | jq .
+        DRY_RUN_WOULD_CREATE_DATASETS+=("${local_full_root_path}")
     fi
 fi
 
